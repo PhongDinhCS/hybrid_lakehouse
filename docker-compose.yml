@@ -79,15 +79,14 @@ services:
     ports:
       - "8585:8585"
     environment:
-      OM_DATABASE_HOST: om_db
-      OM_DATABASE_PORT: 5432
-      OM_DATABASE_USERNAME: om_user
-      OM_DATABASE_PASSWORD: om_pass
-      OM_DATABASE_DB: metadata
-      OM_ELASTICSEARCH_HOST: om_es
-      OM_ELASTICSEARCH_PORT: 9200
-      OM_WORKFLOW_ENABLED: false
-      JAVA_OPTS: -Xms512m -Xmx1g
+      - OM_DATABASE_TYPE=postgres
+      - OM_DATABASE_HOST=om_db
+      - OM_DATABASE_PORT=5432
+      - OM_DATABASE_USERNAME=om_user
+      - OM_DATABASE_PASSWORD=om_pass
+      - OM_DATABASE_DB=metadata
+      - OM_WORKFLOW_ENABLED=false
+      - JAVA_OPTS=-Xms512m -Xmx1g
     depends_on:
       om_db:
         condition: service_healthy
