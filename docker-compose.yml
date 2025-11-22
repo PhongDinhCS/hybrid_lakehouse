@@ -74,18 +74,13 @@ services:
   openmetadata:
     image: openmetadata/server:1.10.4
     container_name: openmetadata
-    networks:
-      - iceberg_net
-    ports:
-      - "8585:8585"
     environment:
-      - OM_DB_TYPE=postgres
+      - OM_DB_TYPE=mysql
       - OM_DATABASE_HOST=om_db
-      - OM_DATABASE_PORT=5432
+      - OM_DATABASE_PORT=3306
       - OM_DATABASE_USERNAME=om_user
       - OM_DATABASE_PASSWORD=om_pass
       - OM_DATABASE_DB=metadata
-      - OM_DB_CONNECTION=jdbc:postgresql://om_db:5432/metadata
       - OM_WORKFLOW_ENABLED=false
       - JAVA_OPTS=-Xms512m -Xmx1g
     depends_on:
@@ -93,24 +88,24 @@ services:
         condition: service_healthy
       om_es:
         condition: service_healthy
-
-
+  
+  
   om_db:
-    image: postgres:15
+    image: mysql:8.1
     container_name: om_db
-    networks:
-      - iceberg_net
     environment:
-      POSTGRES_USER: om_user
-      POSTGRES_PASSWORD: om_pass
-      POSTGRES_DB: metadata
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: metadata
+      MYSQL_USER: om_user
+      MYSQL_PASSWORD: om_pass
     ports:
-      - "5432:5432"
+      - "3306:3306"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U om_user"]
+      test: ["CMD", "mysqladmin", "ping", "-u", "om_user", "-p om_pass"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+
 
   om_es:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
