@@ -90,6 +90,9 @@ services:
         condition: service_healthy
     networks:
       - iceberg_net
+    entrypoint: ["./wait-for-mysql.sh"]
+    volumes:
+      - ./wait-for-mysql.sh:/wait-for-mysql.sh
 
   om_db:
     image: mysql:8.1
