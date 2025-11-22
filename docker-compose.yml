@@ -70,5 +70,54 @@ services:
       /usr/bin/mc anonymous set public minio/warehouse;
       tail -f /dev/null
       "
+    
+  # OpenMetadata
+  openmetadata:
+    image: openmetadata/openmetadata:latest
+    container_name: openmetadata
+    networks:
+      - iceberg_net
+    ports:
+      - 8585:8585
+    environment:
+      - OM_DATABASE_HOST=om_db
+      - OM_DATABASE_PORT=5432
+      - OM_DATABASE_USERNAME=om_user
+      - OM_DATABASE_PASSWORD=om_pass
+      - OM_DATABASE_DB=metadata
+      - OM_ELASTICSEARCH_HOST=om_es
+      - OM_ELASTICSEARCH_PORT=9200
+      - JAVA_OPTS=-Xms512m -Xmx1g
+    depends_on:
+      - om_db
+      - om_es
+
+  # OpenMetadata Postgres
+  om_db:
+    image: postgres:15
+    container_name: om_db
+    networks:
+      - iceberg_net
+    environment:
+      - POSTGRES_USER=om_user
+      - POSTGRES_PASSWORD=om_pass
+      - POSTGRES_DB=metadata
+    ports:
+      - 5432:5432
+
+  # OpenMetadata Elasticsearch
+  om_es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: om_es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx1g
+    networks:
+      - iceberg_net
+    ports:
+      - 9200:9200
+
+      
 networks:
   iceberg_net:
