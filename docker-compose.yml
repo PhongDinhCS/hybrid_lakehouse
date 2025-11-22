@@ -72,7 +72,7 @@ services:
       "
     
   openmetadata:
-    image: openmetadata/openmetadata:latest
+    image: openmetadata/server:1.10.4
     container_name: openmetadata
     networks:
       - iceberg_net
