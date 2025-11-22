@@ -114,14 +114,18 @@ services:
   om_es:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
     container_name: om_es
-    networks:
-      - iceberg_net
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx1g
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - 9200:9200
+      - "9200:9200"
+    networks:
+      - iceberg_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep '\"status\":\"green\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 
       
