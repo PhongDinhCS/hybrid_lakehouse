@@ -71,7 +71,6 @@ services:
       tail -f /dev/null
       "
     
-  # OpenMetadata
   openmetadata:
     image: openmetadata/openmetadata:latest
     container_name: openmetadata
@@ -92,7 +91,6 @@ services:
       - om_db
       - om_es
 
-  # OpenMetadata Postgres
   om_db:
     image: postgres:15
     container_name: om_db
@@ -105,18 +103,18 @@ services:
     ports:
       - 5432:5432
 
-  # OpenMetadata Elasticsearch
   om_es:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
     container_name: om_es
+    networks:
+      - iceberg_net
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx1g
-    networks:
-      - iceberg_net
     ports:
       - 9200:9200
+
 
       
 networks:
