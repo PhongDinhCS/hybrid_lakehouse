@@ -79,7 +79,7 @@ services:
     ports:
       - "8585:8585"
     environment:
-      - OM_DATABASE_TYPE=postgres
+      - OM_DB_TYPE=postgres
       - OM_DATABASE_HOST=om_db
       - OM_DATABASE_PORT=5432
       - OM_DATABASE_USERNAME=om_user
@@ -92,6 +92,7 @@ services:
         condition: service_healthy
       om_es:
         condition: service_healthy
+
 
   om_db:
     image: postgres:15
