@@ -90,9 +90,10 @@ services:
         condition: service_healthy
     networks:
       - iceberg_net
-    entrypoint: ["./wait-for-mysql.sh"]
+    entrypoint: ["/wait-for-mysql.sh"]   # <-- use absolute path inside container
     volumes:
-      - ./wait-for-mysql.sh:/wait-for-mysql.sh
+      - ./wait-for-mysql.sh:/wait-for-mysql.sh   # host : container
+
 
   om_db:
     image: mysql:8.1
