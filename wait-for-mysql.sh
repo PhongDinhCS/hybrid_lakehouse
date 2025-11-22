@@ -1,14 +1,16 @@
-#!/bin/bash
+#!/bin/sh
+# wait-for-mysql.sh
+
 set -e
 
-echo "Waiting for MySQL to be ready at $OM_DATABASE_HOST:$OM_DATABASE_PORT ..."
+host="$1"
+shift
+cmd="$@"
 
-while ! mysql -h "$OM_DATABASE_HOST" -P "$OM_DATABASE_PORT" \
-    -u "$OM_DATABASE_USERNAME" -p"$OM_DATABASE_PASSWORD" -e "SELECT 1;" &> /dev/null
-do
+until mysql -h "$host" -P 3306 -u "$OM_DATABASE_USERNAME" -p"$OM_DATABASE_PASSWORD" -e "SELECT 1;" > /dev/null 2>&1; do
   echo "MySQL is unavailable - sleeping 2s"
   sleep 2
 done
 
-echo "MySQL is up - starting OpenMetadata"
-exec /entrypoint.sh
+echo "MySQL is up - executing command"
+exec $cmd
