@@ -91,6 +91,7 @@ services:
     depends_on:
       - om_db
       - om_es
+    command: ["./wait-for-it.sh", "om_db:5432", "--", "/start-openmetadata.sh"]
 
   om_db:
     image: postgres:15
