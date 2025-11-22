@@ -85,6 +85,7 @@ services:
       - OM_DATABASE_USERNAME=om_user
       - OM_DATABASE_PASSWORD=om_pass
       - OM_DATABASE_DB=metadata
+      - OM_DB_CONNECTION=jdbc:postgresql://om_db:5432/metadata
       - OM_WORKFLOW_ENABLED=false
       - JAVA_OPTS=-Xms512m -Xmx1g
     depends_on:
