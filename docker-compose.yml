@@ -72,7 +72,7 @@ services:
       "
     
   openmetadata:
-    image: openmetadata/server:1.10.4
+    image: openmetadata/server:1.4.3
     container_name: openmetadata
     networks:
       - iceberg_net
@@ -86,6 +86,7 @@ services:
       - OM_DATABASE_DB=metadata
       - OM_ELASTICSEARCH_HOST=om_es
       - OM_ELASTICSEARCH_PORT=9200
+      - OM_WORKFLOW_ENABLED=false
       - JAVA_OPTS=-Xms512m -Xmx1g
     depends_on:
       - om_db
