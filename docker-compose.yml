@@ -64,13 +64,12 @@ services:
     image: tabulario/rest:latest
     networks:
       - hybrid_net
-
   # -------------------------
   # OpenMetadata DB + Search
   # -------------------------
   mysql:
     container_name: openmetadata_mysql
-    image: docker.getcollate.io/openmetadata/db:1.10.0-SNAPSHOT
+    image: openmetadata/db:1.10.0
     command: "--sort_buffer_size=10M"
     restart: always
     environment:
@@ -84,7 +83,7 @@ services:
     networks:
       - hybrid_net
     healthcheck:
-      test: mysql --user=root --password=$$MYSQL_ROOT_PASSWORD --silent --execute "use openmetadata_db"
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$MYSQL_ROOT_PASSWORD"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -104,14 +103,14 @@ services:
     networks:
       - hybrid_net
     healthcheck:
-      test: "curl -s http://localhost:9200/_cluster/health?pretty | grep status | grep -qE 'green|yellow' || exit 1"
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"' || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
 
   execute-migrate-all:
     container_name: execute_migrate_all
-    image: docker.getcollate.io/openmetadata/server:1.10.0-SNAPSHOT
+    image: openmetadata/server:1.10.0
     command: "./bootstrap/openmetadata-ops.sh migrate"
     environment:
       SERVER_PORT: 8585
@@ -123,7 +122,7 @@ services:
 
   openmetadata-server:
     container_name: openmetadata_server
-    image: docker.getcollate.io/openmetadata/server:1.10.0-SNAPSHOT
+    image: openmetadata/server:1.10.0
     restart: always
     environment:
       SERVER_PORT: 8585
@@ -146,11 +145,11 @@ services:
     networks:
       - hybrid_net
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider",  "http://localhost:8586/healthcheck" ]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8586/healthcheck"]
 
   ingestion:
     container_name: openmetadata_ingestion
-    image: docker.getcollate.io/openmetadata/ingestion:1.10.0-SNAPSHOT
+    image: openmetadata/ingestion:1.10.0
     depends_on:
       - openmetadata-server
       - mysql
