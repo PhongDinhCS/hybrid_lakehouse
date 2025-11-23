@@ -1,81 +1,103 @@
-version: "3.9"
-
-volumes:
-  ingestion-volume-dag-airflow:
-  ingestion-volume-dags:
-  ingestion-volume-tmp:
-  es-data:
-  minio-data:
-  db-data:
-  warehouse:
-
-networks:
-  hybrid_net:
-    ipam:
-      driver: default
-      config:
-        - subnet: "172.16.240.0/24"
-
 services:
   # -------------------------
-  # MinIO for Iceberg storage
+  # MinIO (S3) for Iceberg
   # -------------------------
   minio:
+    image: minio/minio
     container_name: minio
-    image: minio/minio:RELEASE.2023-08-09T00-14-10Z
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
-    volumes:
-      - minio-data:/data
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+      MINIO_DOMAIN: minio
     networks:
       - hybrid_net
+        aliases:
+          - warehouse.minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO console
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
   mc:
-    container_name: mc
     image: minio/mc
+    container_name: mc
     depends_on:
       - minio
+    networks:
+      - hybrid_net
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password
     entrypoint: >
-      sh -c "sleep 5 && mc alias set local http://minio:9000 minio minio123"
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do
+        echo '...waiting for minio...' && sleep 1;
+      done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc anonymous set public minio/warehouse;
+      tail -f /dev/null
+      "
 
   # -------------------------
-  # Spark + Iceberg
+  # Iceberg REST + Spark
   # -------------------------
-  spark-iceberg:
-    container_name: spark-iceberg
-    image: tabulario/spark-iceberg
-    build: spark/
+  rest:
+    image: apache/iceberg-rest-fixture
+    container_name: iceberg-rest
+    networks:
+      - hybrid_net
+    ports:
+      - "8181:8181"
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password
+      AWS_REGION: us-east-1
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
     depends_on:
       - minio
+
+  spark-iceberg:
+    build: spark/
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    networks:
+      - hybrid_net
+    depends_on:
       - rest
+      - minio
     volumes:
       - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks/notebooks
-    networks:
-      - hybrid_net
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password
+      AWS_REGION: us-east-1
+    ports:
+      - "8888:8888"
+      - "8080:8080"
+      - "10000:10000"
+      - "10001:10001"
 
-  rest:
-    container_name: rest
-    image: tabulario/rest:latest
-    networks:
-      - hybrid_net
   # -------------------------
   # OpenMetadata DB + Search
   # -------------------------
   mysql:
-    container_name: openmetadata_mysql
     image: openmetadata/db:1.10.0
+    container_name: openmetadata_mysql
     command: "--sort_buffer_size=10M"
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password
-    expose:
-      - 3306
     ports:
       - "3306:3306"
     volumes:
@@ -89,12 +111,12 @@ services:
       retries: 10
 
   elasticsearch:
-    container_name: openmetadata_elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
+    container_name: openmetadata_elasticsearch
     environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
-      - xpack.security.enabled=false
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+      xpack.security.enabled: "false"
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -109,8 +131,8 @@ services:
       retries: 10
 
   execute-migrate-all:
-    container_name: execute_migrate_all
     image: openmetadata/server:1.10.0
+    container_name: execute_migrate_all
     command: "./bootstrap/openmetadata-ops.sh migrate"
     environment:
       SERVER_PORT: 8585
@@ -121,8 +143,8 @@ services:
       - hybrid_net
 
   openmetadata-server:
-    container_name: openmetadata_server
     image: openmetadata/server:1.10.0
+    container_name: openmetadata_server
     restart: always
     environment:
       SERVER_PORT: 8585
@@ -148,8 +170,8 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8586/healthcheck"]
 
   ingestion:
-    container_name: openmetadata_ingestion
     image: openmetadata/ingestion:1.10.0
+    container_name: openmetadata_ingestion
     depends_on:
       - openmetadata-server
       - mysql
@@ -172,3 +194,17 @@ services:
     entrypoint: /bin/bash
     command:
       - "/opt/airflow/ingestion_dependency.sh"
+
+# -------------------------
+# Networks and Volumes
+# -------------------------
+networks:
+  hybrid_net:
+
+volumes:
+  db-data:
+  es-data:
+  minio-data:
+  ingestion-volume-dag-airflow:
+  ingestion-volume-dags:
+  ingestion-volume-tmp:
