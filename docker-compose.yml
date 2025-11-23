@@ -11,8 +11,8 @@ services:
       MINIO_DOMAIN: minio
     networks:
       - hybrid_net
-        aliases:
-          - warehouse.minio
+    aliases:
+      - warehouse.minio
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # MinIO console
