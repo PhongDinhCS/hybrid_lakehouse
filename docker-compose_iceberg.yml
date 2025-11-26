@@ -6,7 +6,7 @@ services:
     container_name: spark-iceberg
     build: spark/
     networks:
-      iceberg_net:
+      app_net:
     depends_on:
       - rest
       - minio
