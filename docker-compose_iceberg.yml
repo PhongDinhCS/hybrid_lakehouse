@@ -43,8 +43,6 @@ services:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password
       - MINIO_DOMAIN=minio
-      - MINIO_BROWSER_REDIRECT_URL=http://100.109.102.124:9001
-      - MINIO_SERVER_URL=http://100.109.102.124:9000
     networks:
       app_net:
         aliases:
