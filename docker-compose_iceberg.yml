@@ -26,6 +26,9 @@ services:
       - SPARK_CONF__spark.sql.catalog.demo.s3.endpoint=http://minio:9000
       - SPARK_CONF__spark.sql.catalog.demo.s3.path-style-access=true
       - SPARK_CONF__spark.sql.catalogImplementation=demo
+      # spark.conf.set("spark.sql.catalog.demo", "org.apache.iceberg.spark.SparkCatalog")
+      # spark.conf.set("spark.sql.catalog.demo.type", "rest")
+      # spark.conf.set("spark.sql.catalog.demo.uri", "http://rest:8181")
     ports:
       - 8888:8888
       - 18080:8080
